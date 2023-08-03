@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<meta charset="UTF-8">
+  <head>
+    <title>구글 지도!</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAGqbkrXZ42f8TtH3Sv6Uu4edzDm3EvCoM&libraries=places"></script>
+    <script>
+      function initMap() {
+        // 지도 생성
+        var map = new google.maps.Map(document.getElementById('map'), {
+          center: {lat: 37.5665, lng: 126.9780},
+          zoom: 40
+        });
+
+        // 장소 검색
+        var searchBox = new google.maps.places.SearchBox(document.getElementById('search-box'));
+        map.controls[google.maps.ControlPosition.TOP_LEFT].push(document.getElementById('search-box'));
+        map.addListener('bounds_changed', function() {
+          searchBox.setBounds(map.getBounds());
+        });
+        var markers = [];
+        searchBox.addListener('places_changed', function() {
+          var places = searchBox.getPlaces();
+          if (places.length === 0) {
+            return;
+          }
+          markers.forEach(function(marker) {
+            marker.setMap(null);
+          });
+          markers = [];
+          var bounds = new google.maps.LatLngBounds();
+          places.forEach(function(place) {
+            if (!place.geometry) {
+              console.log("Returned place contains no geometry");
+              return;
+            }
+            var icon = {
+              // url: place.icon,
+              size: new google.maps.Size(71, 71),
+              origin: new google.maps.Point(0, 0),
+              anchor: new google.maps.Point(17, 34),
+              scaledSize: new google.maps.Size(25, 25)
+            };
+            markers.push(new google.maps.Marker({
+              map: map,
+              icon: icon,
+              title: place.name,
+              position: place.geometry.location
+            }));
+            if (place.geometry.viewport) {
+              bounds.union(place.geometry.viewport);
+            } else {
+              bounds.extend(place.geometry.location);
+            }
+          });
+          map.fitBounds(bounds);
+        });
+
+        // 마우스 오른쪽 클릭 시 마커 추가
+        google.maps.event.addListener(map, 'rightclick', function(event) {
+          placeMarker(map, event.latLng);
+        });
+
+        function placeMarker(map, location) {
+          var marker = new google.maps.Marker({
+            position: location,
+            map: map
+          });
+
+          // 위치 정보 표시
+          var infowindow = new google.maps.InfoWindow({
+            content: '위도: ' + location.lat() + '<br>경도: ' + location.lng()
+          });
+
+          // 마커에 마우스 올리기 이벤트 생성
+          marker.addListener('mouseover', function() {
+            infowindow.open(map, marker);
+          });
+
+          // 마커에 마우스 내리기 이벤트 생성
+          marker.addListener('mouseout', function() {
+            infowindow.close();
+          });
+
+          // 마커에 오른쪽 클릭 시 마커 제거
+          marker.addListener('rightclick', function() {
+            marker.setMap(null);
+          });
+
+          markers.push(marker);
+        }
+      }
+    </script>
+    <style>
+      #map {
+        height: 500px;
+        width: 40%;
+      }
+      #search-box {
+        position: absolute;
+        top: 400px;
+        left: 10px;
+        z-index: 100;
+        width: 200px;
+        height: 32px;
+        padding: 0 12px;
+      }
+    </style>
+  </head>
+  <body onload="initMap()">
+    <input id="search-box" type="text" placeholder="Search">
+    <div id="map"></div>
+  </body>
+</html>
